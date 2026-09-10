@@ -16,12 +16,32 @@ android {
         versionName = "1.1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            // CI provides the keystore as a base64 GitHub secret. Locally (no env
+            // vars set) release builds fall back to the debug key.
+            val ksB64 = System.getenv("KEYSTORE_BASE64")
+            if (ksB64 != null) {
+                val ksFile = java.io.File.createTempFile("coin-rush-release", ".p12")
+                ksFile.writeBytes(java.util.Base64.getDecoder().decode(ksB64))
+                storeFile = ksFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEYSTORE_ALIAS")
+                keyPassword = System.getenv("KEYSTORE_PASSWORD")
+                storeType = "PKCS12"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // TODO: replace with a real keystore before uploading to Google Play.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (System.getenv("KEYSTORE_BASE64") != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
