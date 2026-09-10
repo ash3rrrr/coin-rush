@@ -4,6 +4,7 @@ import android.app.Activity
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.rewarded.RewardedAd
@@ -39,7 +40,7 @@ class AdController(private val activity: Activity) {
                     interstitial = ad
                 }
 
-                override fun onAdFailedToLoad(error: AdError) {
+                override fun onAdFailedToLoad(error: LoadAdError) {
                     interstitial = null
                 }
             }
@@ -56,7 +57,7 @@ class AdController(private val activity: Activity) {
                     rewarded = ad
                 }
 
-                override fun onAdFailedToLoad(error: AdError) {
+                override fun onAdFailedToLoad(error: LoadAdError) {
                     rewarded = null
                 }
             }

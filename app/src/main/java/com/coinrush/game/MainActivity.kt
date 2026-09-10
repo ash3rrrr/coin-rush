@@ -8,7 +8,6 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.lifecycleScope
@@ -27,7 +26,7 @@ class MainActivity : ComponentActivity() {
         adController.loadAll()
 
         setContent {
-            val state by viewModel.uiState
+            val state = viewModel.uiState
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = Color(0xFF0B1026)
