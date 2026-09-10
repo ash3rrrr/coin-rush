@@ -55,6 +55,11 @@ class GameEngine {
         playerLane = (playerLane + 1) % LANE_COUNT
     }
 
+    /** Moves the player `delta` lanes left/right, clamped to the outer lanes. */
+    fun moveBy(delta: Int) {
+        playerLane = (playerLane + delta).coerceIn(0, LANE_COUNT - 1)
+    }
+
     /** Advances the world one tick. Returns true when the run ends. */
     fun tick(): Boolean {
         tickCount++

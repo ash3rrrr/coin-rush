@@ -1,3 +1,6 @@
+import java.io.File
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -22,8 +25,8 @@ android {
             // vars set) release builds fall back to the debug key.
             val ksB64 = System.getenv("KEYSTORE_BASE64")
             if (ksB64 != null) {
-                val ksFile = java.io.File.createTempFile("coin-rush-release", ".p12")
-                ksFile.writeBytes(java.util.Base64.getDecoder().decode(ksB64))
+                val ksFile = File.createTempFile("coin-rush-release", ".p12")
+                ksFile.writeBytes(Base64.getDecoder().decode(ksB64))
                 storeFile = ksFile
                 storePassword = System.getenv("KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("KEYSTORE_ALIAS")
