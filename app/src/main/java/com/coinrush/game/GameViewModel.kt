@@ -2,6 +2,8 @@ package com.coinrush.game
 
 import android.app.Application
 import android.content.Context
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -28,6 +30,10 @@ data class UiState(
 class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val soundFx = SoundFx(application)
+
+    @Suppress("DEPRECATION")
+    private val vibrator = application.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
     var uiState by mutableStateOf(UiState())
         private set
@@ -54,11 +60,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         publish()
     }
 
-    fun onTap() {
+    /**
+     * Player input. [delta] is -1 for swipe left, 1 for swipe right,
+     * or 0 for a plain tap (cycles to the next lane).
+     */
+    fun onTap(delta: Int) {
         when (uiState.phase) {
             Phase.MENU -> startGame()
             Phase.PLAYING -> {
-                engine.switchLane()
+                if (delta == 0) engine.switchLane() else engine.moveBy(delta)
+                soundFx.swish()
+                buzz(12)
                 publish()
             }
             // Tapping anywhere after the game-over dialog is dismissed starts a new run.
@@ -78,14 +90,30 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         publish(phase = Phase.PLAYING)
     }
 
+    override fun onCleared() {
+        soundFx.release()
+        super.onCleared()
+    }
+
     private fun startGame() {
         engine.reset()
         publish(phase = Phase.PLAYING)
     }
 
     private fun step() {
+        val coinsBefore = engine.coins
         val gameOver = engine.tick()
-        if (gameOver) endGame() else publish()
+        if (engine.coins > coinsBefore) {
+            soundFx.coin()
+            buzz(20)
+        }
+        if (gameOver) {
+            soundFx.crash()
+            buzz(90)
+            endGame()
+        } else {
+            publish()
+        }
     }
 
     private fun endGame() {
@@ -100,6 +128,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             gamesSinceInterstitial = 0
             _showInterstitial.tryEmit(Unit)
         }
+    }
+
+    private fun buzz(durationMs: Long) {
+        vibrator.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
     }
 
     private fun publish(phase: Phase = uiState.phase) {

@@ -20,6 +20,21 @@ class GameEngineTest {
     }
 
     @Test
+    fun `swipe moves are clamped to the outer lanes`() {
+        val engine = GameEngine()
+        engine.moveBy(-1)
+        assertEquals(0, engine.playerLane)
+        engine.moveBy(-1)
+        assertEquals(0, engine.playerLane)
+        engine.moveBy(1)
+        assertEquals(1, engine.playerLane)
+        engine.moveBy(1)
+        assertEquals(2, engine.playerLane)
+        engine.moveBy(1)
+        assertEquals(2, engine.playerLane)
+    }
+
+    @Test
     fun `coin in the player lane is collected and awards score`() {
         val engine = GameEngine()
         engine.debugSpawn(lane = 1, y = 0.85f, isCoin = true)

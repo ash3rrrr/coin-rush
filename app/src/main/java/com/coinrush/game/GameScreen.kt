@@ -1,7 +1,8 @@
 package com.coinrush.game
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,10 +30,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.abs
 
 private val LaneLineColor = Color.White.copy(alpha = 0.10f)
 private val PlayerColor = Color(0xFF6C8CFF)
@@ -44,12 +46,36 @@ private val CoinInner = Color(0xFFE8A81C)
 @Composable
 fun GameScreen(
     state: UiState,
-    onTap: () -> Unit,
+    onTap: (Int) -> Unit,
     onPlayAgain: () -> Unit,
     onWatchRevive: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier = modifier.pointerInput(Unit) { detectTapGestures { onTap() } }) {
+    BoxWithConstraints(
+        modifier = modifier.pointerInput(Unit) {
+            awaitEachGesture {
+                val down = awaitFirstDown()
+                var totalX = 0f
+                var isDrag = false
+                var swiped = false
+                while (true) {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull() ?: break
+                    if (!change.pressed) break
+                    totalX += change.positionChange().x
+                    if (!isDrag && abs(totalX) > viewConfiguration.touchSlop) isDrag = true
+                    if (isDrag && !swiped) {
+                        // One lane per swipe; lift the finger to swipe again.
+                        onTap(if (totalX > 0) 1 else -1)
+                        swiped = true
+                        change.consume()
+                        break
+                    }
+                }
+                if (!isDrag) onTap(0) // plain tap cycles lanes
+            }
+        }
+    ) {
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             val laneWidth = size.width / GameEngine.LANE_COUNT
@@ -101,9 +127,6 @@ fun GameScreen(
 
         if (state.phase == Phase.GAME_OVER) {
             var dialogVisible by remember { mutableStateOf(true) }
-            LaunchedEffect(state.phase) {
-                if (state.phase != Phase.GAME_OVER) dialogVisible = false
-            }
             if (dialogVisible) {
                 GameOverDialog(
                     state = state,
@@ -140,7 +163,7 @@ private fun MenuOverlay() {
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Tap anywhere to switch lanes.\nDodge the red blocks. Grab the gold.",
+                text = "Swipe left / right — or tap — to switch lanes.\nDodge the red blocks. Grab the gold.",
                 color = Color.White.copy(alpha = 0.85f),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
